@@ -317,12 +317,21 @@ input.addEventListener("keydown", async (e)=>{
 term.addEventListener("click", ()=> input.focus());
 document.addEventListener("keydown",(e)=>{ if(!busy && document.activeElement!==input && e.key.length===1) input.focus(); });
 
+/* deep-links: #projects, #contact, #github ... run that command */
+function getHashCommand(){
+  const h = (location.hash||"").replace(/^#/,"").trim().toLowerCase();
+  if(!h) return null;
+  const key = ALIASES[h] || h;
+  return COMMANDS[key] ? h : null;
+}
+window.addEventListener("hashchange", ()=>{ const c=getHashCommand(); if(c && !busy) run(c); });
+
 // chips
 const chips = $("#chips");
 CHIP_LIST.forEach(c=>{
   const b = document.createElement("button");
   b.className="chip"; b.textContent=c;
-  b.addEventListener("click", async ()=>{ if(busy) return; input.value=""; input.focus(); await run(c); });
+  b.addEventListener("click", async ()=>{ if(busy) return; try{history.replaceState(null,"","#"+c);}catch(e){} input.value=""; input.focus(); await run(c); });
   chips.appendChild(b);
 });
 
@@ -353,20 +362,26 @@ const BOOT = [
 async function boot(){
   const log = $("#bootLog");
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // Boot + auto-demo are CONTENT, not gratuitous motion — always show them.
+  // Reduced-motion users just get a quicker reveal.
+  const speed = reduce ? 0.4 : 1;
   log.innerHTML = "<span class='dim'>suresh-sec BIOS v4.0.4 — POST...</span>\n\n";
   for(const [t,ms] of BOOT){
     log.innerHTML += t + "\n";
-    if(!reduce) await sleep(ms);
+    await sleep(Math.max(45, ms*speed));
   }
-  await sleep(reduce?0:350);
+  await sleep(reduce?180:350);
   $("#boot").classList.add("hidden");
   $("#screen").classList.remove("hidden");
   input.focus();
   await printLine(`<pre class="banner">${BANNER}</pre>`);
   await printLine(`<div class="sub">${DATA.role} — <span class="g">${DATA.location}</span></div>`);
   await printLine(`<div class="line">Welcome to my interactive portfolio. Type <span class="g b">help</span> to begin, or tap a command below. <span class="m">Try <span class="g">scan</span> or <span class="g">github</span> if you're feeling curious.</span></div>`);
-  // first-visit auto-demo: show who I am without the visitor having to type
-  if(!reduce){ await sleep(650); await autoType("about"); }
+  // first-visit: honor a deep-link (#projects, #contact...) else auto-demo `about`
+  await sleep(reduce?300:650);
+  const hashCmd = getHashCommand();
+  const startCmd = hashCmd || "about";
+  if(reduce) await run(startCmd); else await autoType(startCmd);
 }
 
 /* ---------- MATRIX BG ---------- */
