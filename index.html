@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>suresh@sec — interactive portfolio</title>
+  <meta name="description" content="The interactive terminal portfolio of Suresh Deora — Cybersecurity Professional, RHCE & RHCSA certified. Type a command to begin.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <canvas id="matrix" aria-hidden="true"></canvas>
+
+  <!-- Boot screen -->
+  <div id="boot">
+    <pre id="bootLog"></pre>
+  </div>
+
+  <!-- Terminal window -->
+  <div id="screen" class="crt hidden">
+    <div class="win">
+      <div class="titlebar">
+        <div class="traffic"><span class="tl red"></span><span class="tl yellow"></span><span class="tl green"></span></div>
+        <div class="title">visitor@suresh-sec: ~ — zsh</div>
+        <div class="winmeta"><span id="clock"></span></div>
+      </div>
+
+      <div id="terminal" class="terminal" tabindex="0">
+        <div id="output"></div>
+        <div id="inputLine" class="inputline">
+          <span class="prompt"><span class="u">visitor</span><span class="at">@</span><span class="h">suresh-sec</span><span class="c">:</span><span class="p">~</span><span class="d">$</span></span>
+          <input id="cmd" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="terminal input">
+        </div>
+      </div>
+
+      <div class="dock">
+        <span class="dock-hint">try:</span>
+        <div id="chips" class="chips"></div>
+      </div>
+    </div>
+    <p class="hint-bar">Tip: type <b>help</b> · use <b>↑ ↓</b> for history · <b>Tab</b> to autocomplete</p>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
