@@ -37,6 +37,36 @@ const bar = (pct) => {
 };
 const promptHTML = `<span class="prompt"><span class="u">visitor</span><span class="at">@</span><span class="h">suresh-sec</span><span class="c">:</span><span class="p">~</span><span class="d">$</span></span>`;
 
+/* ---------- THEME SYSTEM ---------- */
+const THEMES = ["matrix","amber","ice","light"];
+const THEME_LABEL = { matrix:"Matrix green", amber:"Amber CRT", ice:"Ice blue", light:"Light mode" };
+const THEME_ACCENT = { matrix:"#34d399", amber:"#fbbf24", ice:"#38bdf8", light:"#0f9d6b" };
+let accentColor = "#34d399";
+let currentTheme = "matrix";
+function applyTheme(name){
+  if(!THEMES.includes(name)) name = "matrix";
+  currentTheme = name;
+  document.documentElement.setAttribute("data-theme", name);
+  accentColor = THEME_ACCENT[name];
+  try{ localStorage.setItem("term-theme", name); }catch(e){}
+  const mx = document.getElementById("matrix");
+  if(mx) mx.style.display = (name === "light") ? "none" : "";
+  const btn = document.getElementById("themeBtn");
+  if(btn) btn.title = "Theme: " + THEME_LABEL[name] + " (click to switch)";
+  return name;
+}
+// apply saved theme immediately (before boot) to avoid a flash
+applyTheme((()=>{ try{ return localStorage.getItem("term-theme"); }catch(e){ return null; } })() || "matrix");
+// title-bar button cycles through the themes
+(function(){
+  const btn = document.getElementById("themeBtn");
+  if(!btn) return;
+  btn.addEventListener("click", ()=>{
+    const i = THEMES.indexOf(currentTheme);
+    applyTheme(THEMES[(i + 1) % THEMES.length]);
+  });
+})();
+
 /* ---------- COMMANDS ---------- */
 const COMMANDS = {
   help(){
@@ -44,7 +74,7 @@ const COMMANDS = {
       ["about","who I am"],["skills","the arsenal"],["projects","what I've built"],
       ["experience","where I've worked"],["education","my degree"],["certs","certifications"],
       ["contact","reach me"],["resume","download my CV"],["social","my links"],
-      ["scan","run a port scan"],["clear","wipe the screen"],["sudo","🙃"],
+      ["github","live GitHub stats"],["theme","switch colors"],["scan","run a port scan"],["clear","wipe the screen"],["sudo","🙃"],
     ];
     return `<div class="line"><span class="g b">Available commands</span> <span class="m">— click a chip below or type one:</span></div>
       <div class="cmd-list">${items.map(([n,d])=>`<div><span class="name">${n}</span> <span class="desc">— ${d}</span></div>`).join("")}</div>`;
@@ -161,6 +191,47 @@ const COMMANDS = {
 
   clear(){ $("#output").innerHTML=""; return ""; },
 
+  theme(args){
+    if(!args.length){
+      const list = THEMES.map(t => `<span class="${t===currentTheme?'g b':'m'}">${t}${t===currentTheme?' ◄':''}</span>`).join("   ");
+      return `<div class="line">available themes: ${list}</div><div class="line m">usage: <span class="g">theme &lt;name&gt;</span> — e.g. <span class="g">theme light</span>. Or click <span class="g">◐</span> in the title bar.</div>`;
+    }
+    const name = args[0].toLowerCase();
+    if(!THEMES.includes(name)) return `<div class="line r">unknown theme: ${esc(name)}</div><div class="line m">try: ${THEMES.join(" · ")}</div>`;
+    applyTheme(name);
+    return `<div class="line g">theme set → ${THEME_LABEL[name]} ✓</div>`;
+  },
+
+  async github(){
+    await printLine(`<div class="line m">Fetching live data from github.com/SureshDeora ...</div>`);
+    const user = DATA.social.github.split("/").pop();
+    try{
+      const [u, repos] = await Promise.all([
+        fetch(`https://api.github.com/users/${user}`).then(r=>r.json()),
+        fetch(`https://api.github.com/users/${user}/repos?per_page=100&sort=updated`).then(r=>r.json()),
+      ]);
+      if(!Array.isArray(repos) || u.message) throw new Error("rate-limited");
+      const stars = repos.reduce((s,r)=>s+(r.stargazers_count||0),0);
+      const langs = {};
+      repos.forEach(r=>{ if(r.language) langs[r.language]=(langs[r.language]||0)+1; });
+      const topLangs = Object.entries(langs).sort((a,b)=>b[1]-a[1]).slice(0,5).map(x=>x[0]).join(" · ") || "—";
+      const recent = repos.filter(r=>!r.fork).slice(0,5).map(r=>
+        `<div class="line"><span class="g">◆</span> <a class="link" target="_blank" href="${r.html_url}">${r.name}</a> <span class="m">${r.language||""}${r.stargazers_count?(" · ★"+r.stargazers_count):""}</span></div>`
+      ).join("");
+      return `<div class="kv">
+        <div class="k">user</div><div>${u.name||"Suresh Deora"} <span class="m">(@${u.login})</span></div>
+        <div class="k">public repos</div><div><span class="c">${u.public_repos}</span></div>
+        <div class="k">followers</div><div><span class="c">${u.followers}</span> · following ${u.following}</div>
+        <div class="k">total stars</div><div><span class="c">★ ${stars}</span></div>
+        <div class="k">top langs</div><div>${topLangs}</div>
+      </div>
+      <div class="line" style="margin-top:.5rem"><span class="c b">▸ recently updated</span></div>${recent}
+      <div class="line m" style="margin-top:.3rem">↗ <a class="link" target="_blank" href="${u.html_url}">${u.html_url}</a></div>`;
+    }catch(e){
+      return `<div class="line a">GitHub API unreachable right now (rate limit or offline). Visit <a class="link" target="_blank" href="${DATA.social.github}">${DATA.social.github}</a> directly.</div>`;
+    }
+  },
+
   async scan(){
     const ports = [["22","ssh","OpenSSH (RHEL · hardened)"],["80","http","nginx"],["443","https","TLS 1.3"],["1514","wazuh","SIEM — monitored"],["31337","elite","🚩 you found me"]];
     await printLine(`<div class="line m">Starting Nmap 7.95 against suresh-sec (127.0.0.1)...</div>`);
@@ -175,8 +246,8 @@ const COMMANDS = {
   },
 };
 
-const ALIASES = { "?":"help","man":"help","cat":"ls","info":"about","cv":"resume","email":"contact","work":"experience","exp":"experience","journey":"experience","repos":"projects","edu":"education" };
-const CHIP_LIST = ["about","skills","projects","experience","certs","education","contact","scan"];
+const ALIASES = { "?":"help","man":"help","cat":"ls","info":"about","cv":"resume","email":"contact","work":"experience","exp":"experience","journey":"experience","repos":"projects","edu":"education","themes":"theme","mode":"theme","gh":"github","stats":"github" };
+const CHIP_LIST = ["about","skills","projects","experience","certs","education","github","contact","scan"];
 
 /* ---------- ENGINE ---------- */
 const output = $("#output");
@@ -259,6 +330,15 @@ CHIP_LIST.forEach(c=>{
 function tick(){ const d=new Date(); $("#clock").textContent = d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}); }
 tick(); setInterval(tick,15000);
 
+/* auto-type a command (for the first-visit demo) */
+async function autoType(text){
+  input.focus();
+  for(let i=0;i<text.length;i++){ input.value += text[i]; await sleep(75); }
+  await sleep(280);
+  const v = input.value; input.value="";
+  await run(v);
+}
+
 /* ---------- BOOT SEQUENCE ---------- */
 const BOOT = [
   ["[ <span class='ok'>OK</span> ] Mounting /dev/secure ............ done", 90],
@@ -284,7 +364,9 @@ async function boot(){
   input.focus();
   await printLine(`<pre class="banner">${BANNER}</pre>`);
   await printLine(`<div class="sub">${DATA.role} — <span class="g">${DATA.location}</span></div>`);
-  await printLine(`<div class="line">Welcome to my interactive portfolio. Type <span class="g b">help</span> to begin, or tap a command below. <span class="m">Try <span class="g">scan</span> if you're feeling curious.</span></div>`);
+  await printLine(`<div class="line">Welcome to my interactive portfolio. Type <span class="g b">help</span> to begin, or tap a command below. <span class="m">Try <span class="g">scan</span> or <span class="g">github</span> if you're feeling curious.</span></div>`);
+  // first-visit auto-demo: show who I am without the visitor having to type
+  if(!reduce){ await sleep(650); await autoType("about"); }
 }
 
 /* ---------- MATRIX BG ---------- */
@@ -299,7 +381,7 @@ async function boot(){
   (function draw(t){
     if(t-last>58){ last=t;
       ctx.fillStyle="rgba(7,10,13,.09)"; ctx.fillRect(0,0,cv.width,cv.height);
-      ctx.fillStyle="#34d399"; ctx.font=fs+"px JetBrains Mono, monospace";
+      ctx.fillStyle=accentColor; ctx.font=fs+"px JetBrains Mono, monospace";
       for(let i=0;i<drops.length;i++){
         ctx.fillText(chars[Math.random()*chars.length|0], i*fs, drops[i]*fs);
         if(drops[i]*fs>cv.height && Math.random()>0.975) drops[i]=0;

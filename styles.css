@@ -101,7 +101,7 @@ body{
 
 /* rich output blocks */
 .banner{color:var(--green);font-size:clamp(7px,1.7vw,12px);line-height:1.05;
-  white-space:pre;overflow-x:auto;text-shadow:0 0 18px rgba(52,211,153,.45);margin:.2rem 0 .4rem;}
+  white-space:pre;overflow-x:auto;text-shadow:0 0 18px color-mix(in srgb, var(--green) 45%, transparent);margin:.2rem 0 .4rem;}
 .sub{color:var(--muted);margin-bottom:.7rem;}
 
 .grid2{display:grid;grid-template-columns:1fr;gap:.15rem .6rem;}
@@ -163,3 +163,42 @@ a.link:hover{color:#fff;border-color:#fff;}
   .dock-hint{display:none;}
   .win{height:88dvh;}
 }
+
+/* ---------- theme toggle button ---------- */
+.themebtn{
+  background:transparent;border:1px solid var(--line);color:var(--muted);
+  width:24px;height:24px;border-radius:6px;cursor:pointer;font-size:.85rem;line-height:1;
+  display:grid;place-items:center;padding:0;transition:all .18s;
+}
+.themebtn:hover{color:var(--green);border-color:var(--green);transform:rotate(180deg);}
+.winmeta{display:flex;align-items:center;gap:.5rem;justify-content:flex-end;}
+
+/* ---------- THEME VARIANTS ---------- */
+/* default (matrix green) lives in :root */
+html[data-theme="amber"]{ --green:#fbbf24; --green-dim:#b98318; --cyan:#fb923c; --amber:#fde68a; }
+html[data-theme="ice"]{ --green:#38bdf8; --green-dim:#2b86b4; --cyan:#818cf8; --amber:#7dd3fc; }
+
+html[data-theme="light"]{
+  --bg:#eef1f5; --panel:#ffffff; --txt:#243140; --muted:#5b6b7b;
+  --line:rgba(15,23,42,.14); --green:#0f9d6b; --green-dim:#0b7d54; --cyan:#0369a1; --amber:#b45309;
+  color-scheme:light;
+}
+html[data-theme="light"] body{
+  background:
+    radial-gradient(900px 600px at 85% -10%, rgba(15,157,107,.08), transparent 60%),
+    radial-gradient(900px 600px at -5% 110%, rgba(3,105,161,.06), transparent 55%),
+    var(--bg);
+}
+html[data-theme="light"] .win{
+  background:linear-gradient(180deg,#ffffff,#f3f6fa);
+  box-shadow:0 30px 80px -30px rgba(15,23,42,.25), inset 0 1px 0 rgba(255,255,255,.7);
+}
+html[data-theme="light"] .titlebar,
+html[data-theme="light"] .dock{ background:rgba(15,23,42,.03); }
+html[data-theme="light"] .crt::before{ opacity:.14; }
+html[data-theme="light"] .crt::after{ background:radial-gradient(120% 120% at 50% 50%,transparent 72%,rgba(15,23,42,.08) 100%); }
+html[data-theme="light"] .cmd-echo,
+html[data-theme="light"] #cmd{ color:#0b1220; }
+html[data-theme="light"] .w,
+html[data-theme="light"] .card .t{ color:#0b1220; }
+html[data-theme="light"] .chip:hover{ color:#fff; }
